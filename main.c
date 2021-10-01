@@ -5,6 +5,7 @@
 #define BUFF_SIZE 1024
 
 void genHash(const char* hashPrefix, const char* filename, char* hash);
+void sanitize(char* dest, const char* src, int sz);
 void trimHash(char* dest, const char* hash);
 int findSpace(const char* input);
 void printHelpText();
@@ -19,31 +20,35 @@ int main(int argc, char* argv[])
 	}
 
 	//check that file exists
-	char* filename = argv[1];
-	FILE* fileTest = fopen(filename, "r");
+	FILE* fileTest = fopen(argv[1], "r");
 	if(fileTest == NULL)
 	{
-		fprintf(stderr, "Cannot open file: %s\n", filename);
+		fprintf(stderr, "Cannot open file: %s\n", argv[1]);
 		exit(1);
 	}
 	fclose(fileTest);
+	
+	//create "safe" filename string
+	char filename[BUFF_SIZE];
+	memset(filename, 0, BUFF_SIZE);
+	sanitize(filename, argv[1], BUFF_SIZE);
 
 	//create buffers and generate each hash
 	char md5Buff[BUFF_SIZE];
 	memset(md5Buff, 0, BUFF_SIZE);
-	genHash("md5sum ", argv[1], md5Buff);
+	genHash("md5sum ", filename, md5Buff);
 
 	char sha1Buff[BUFF_SIZE];
 	memset(sha1Buff, 0, BUFF_SIZE);
-	genHash("sha1sum ", argv[1], sha1Buff);
+	genHash("sha1sum ", filename, sha1Buff);
 
 	char sha256Buff[BUFF_SIZE];
 	memset(sha256Buff, 0, BUFF_SIZE);
-	genHash("sha256sum ", argv[1], sha256Buff);
+	genHash("sha256sum ", filename, sha256Buff);
 
 	char sha512Buff[BUFF_SIZE];
 	memset(sha512Buff, 0, BUFF_SIZE);
-	genHash("sha512sum ", argv[1], sha512Buff);
+	genHash("sha512sum ", filename, sha512Buff);
 
 	printf("md5:    %s\n", md5Buff);
 	printf("sha1:   %s\n", sha1Buff);
@@ -115,4 +120,13 @@ int findSpace(const char* input)
 
 	//-1 on failure
 	return -1;
+}
+
+//sanitize string (escape with quotes to hopefully prevent attacks)
+void sanitize(char* dest, const char* src, int sz)
+{
+	memset(dest, 0, sz);
+	strcat(dest, "\"");
+	strncat(dest, src, sz - 3);
+	strcat(dest, "\"");
 }
